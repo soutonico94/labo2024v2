@@ -273,20 +273,18 @@ TS_strategy_base9 <- function( pinputexps )
   param_local$meta$script <- "/src/wf-etapas/z2101_TS_training_strategy.r"
   
   
-  param_local$future <- c(202107)
+  param_local$future <- c(202109)
   
   param_local$final_train$undersampling <- 1.0
   param_local$final_train$clase_minoritaria <- c( "BAJA+1", "BAJA+2")
-  param_local$final_train$training <- c(202105, 202104, 202103, 202102,
-                                        202101, 202012, 202011, 202010, 202009, 202008, 202002, 202001, 201912,
-                                        201911, 201910, 201909, 201908, 201907)
+  param_local$final_train$training <- c(202107, 202106, 202105, 202104, 202103, 202102,
+                                        202101, 202012, 202011)
   
   
-  PARAM$train$training <- c(202103, 202102, 202101, 202012, 202011, 202010, 202009, 202008, 202002, 202001, 201912, 201911,
-                            201910, 201909, 201908, 201907, 201906, 201905)
-  
-  param_local$train$validation <- c(202104)
-  param_local$train$testing <- c(202105)
+  param_local$train$training <- c(202105, 202104, 202103, 202102, 202101,
+                                  202012, 202011, 202010, 202009)
+  param_local$train$validation <- c(202106)
+  param_local$train$testing <- c(202107)
   
   # Atencion  0.2  de  undersampling de la clase mayoritaria,  los CONTINUA
   # 1.0 significa NO undersampling
@@ -329,32 +327,31 @@ HT_tuning_base <- function( pinputexps, bo_iteraciones, bypass=FALSE)
     feature_pre_filter = FALSE,
     force_row_wise = TRUE, # para reducir warnings
     verbosity = -100,
-    max_depth = -1L, # -1 significa no limitar,  por ahora lo dejo fijo
-    min_gain_to_split = 0.0, # min_gain_to_split >= 0.0
     min_sum_hessian_in_leaf = 0.001, #  min_sum_hessian_in_leaf >= 0.0
-    lambda_l1 = 0.0, # lambda_l1 >= 0.0
-    lambda_l2 = 0.0, # lambda_l2 >= 0.0
     max_bin = 31L, # lo debo dejar fijo, no participa de la BO
     num_iterations = 9999, # un numero muy grande, lo limita early_stopping_rounds
     
-    bagging_fraction = 1.0, # 0.0 < bagging_fraction <= 1.0
-    pos_bagging_fraction = 1.0, # 0.0 < pos_bagging_fraction <= 1.0
-    neg_bagging_fraction = 1.0, # 0.0 < neg_bagging_fraction <= 1.0
     is_unbalance = FALSE, #
-    scale_pos_weight = 1.0, # scale_pos_weight > 0.0
-    
-    drop_rate = 0.1, # 0.0 < neg_bagging_fraction <= 1.0
-    max_drop = 50, # <=0 means no limit
-    skip_drop = 0.5, # 0.0 <= skip_drop <= 1.0
     
     extra_trees = FALSE,
     # Parte variable
-    learning_rate = c( 0.02, 0.3 ),
-    feature_fraction = c( 0.5, 0.9 ),
-    num_leaves = c( 8L, 2048L,  "integer" ),
-    min_data_in_leaf = c( 20L, 2000L, "integer" ),
-    bagging_freq = 4,
-    feature_fraction_bynode = 0.7
+    max_depth = c(6L, 15L, "integer"), # -1 significa no limitar,  por ahora lo dejo fijo
+    min_gain_to_split = c(0.0, 1.0), # min_gain_to_split >= 0.0
+    learning_rate = c(0.02, 0.1),
+    feature_fraction = c(0.5, 1),
+    num_leaves = c(20L, 4000L, "integer"),
+    min_data_in_leaf = c(10L, 1000L, "integer"),
+    lambda_l1 = c(0.0, 10.0), # lambda_l1 >= 0.0
+    lambda_l2 = c(0.0, 10.0), # lambda_l2 >= 0.0
+    bagging_freq = 3,
+    bagging_fraction = c(0.2, 0.6), # 0.0 < bagging_fraction <= 1.0
+    pos_bagging_fraction = c(0.1, 1.0), # 0.0 < pos_bagging_fraction <= 1.0
+    neg_bagging_fraction = c(0.1, 1.0), # 0.0 < neg_bagging_fraction <= 1.0
+    scale_pos_weight = 1, # scale_pos_weight > 0.0
+    drop_rate = 0.1, # 0.0 < neg_bagging_fraction <= 1.0
+    max_drop = 50, # <=0 means no limit
+    skip_drop = 0.5 # 0.0 <= skip_drop <= 1.0
+    
   )
   
   
@@ -436,20 +433,20 @@ wf_septiembre <- function( pnombrewf )
   param_local <- exp_wf_init( pnombrewf ) # linea fija
   
   DT_incorporar_dataset_competencia2024()
-  CA_catastrophe_base( metodo="MachineLearning")
+  CA_catastrophe_base( metodo="MICE")
   FEintra_manual_base()
-  DR_drifting_base(metodo="rank_cero_fijo")
+  DR_drifting_base(metodo="deflacion")
   FEhist_base()
   
-  FErf_attributes_base( arbolitos= 20,
-                        hojas_por_arbol= 16,
+  FErf_attributes_base( arbolitos= 100,
+                        hojas_por_arbol= 25,
                         datos_por_hoja= 1000,
                         mtry_ratio= 0.2
   )
   #CN_canaritos_asesinos_base(ratio=0.2, desvio=4.0)
   
   ts9 <- TS_strategy_base9()
-  ht <- HT_tuning_base( bo_iteraciones = 70 )  # iteraciones inteligentes
+  ht <- HT_tuning_base( bo_iteraciones = 50 )  # iteraciones inteligentes
   
   fm <- FM_final_models_lightgbm( c(ht, ts9), ranks=c(1), qsemillas=20 )
   SC_scoring( c(fm, ts9) )
