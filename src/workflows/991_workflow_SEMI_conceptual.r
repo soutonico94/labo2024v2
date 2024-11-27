@@ -274,7 +274,7 @@ TS_strategy_base9 <- function( pinputexps )
   
   param_local$future <- c(202109)
   
-  param_local$final_train$undersampling <- 0.20
+  param_local$final_train$undersampling <- 1.0
   param_local$final_train$clase_minoritaria <- c( "BAJA+1", "BAJA+2")
   param_local$final_train$training <- c(
     202107, 202106, 202105, 202104, 202103, 202102, 202101, 
@@ -350,17 +350,17 @@ HT_tuning_semillerio <- function( pinputexps, semillerio, bo_iteraciones, bypass
     feature_pre_filter = FALSE,
     force_row_wise = TRUE, # para reducir warnings
     verbosity = -100,
-    max_depth = c(6L, 15L, "integer"), # -1 significa no limitar,  por ahora lo dejo fijo
+    max_depth = -1L, # -1 significa no limitar,  por ahora lo dejo fijo
     min_gain_to_split = c(0.0, 1.0), # min_gain_to_split >= 0.0
     min_sum_hessian_in_leaf = 0.001, #  min_sum_hessian_in_leaf >= 0.0
-    lambda_l1 = c(0.0, 10.0), # lambda_l1 >= 0.0
-    lambda_l2 = c(0.0, 10.0), # lambda_l2 >= 0.0
+    lambda_l1 = c(0.0, 100.0), # lambda_l1 >= 0.0
+    lambda_l2 = c(0.0, 100.0), # lambda_l2 >= 0.0
     max_bin = 31L, # lo debo dejar fijo, no participa de la BO
     
     num_iterations = 9999L, # un numero muy grande
     early_stopping_base = 200L,
     
-    bagging_fraction = c(0.2, 0.6), # 0.0 < bagging_fraction <= 1.0
+    bagging_fraction = c(0.5, 0.9), # 0.0 < bagging_fraction <= 1.0
     pos_bagging_fraction = c(0.1, 1.0), # 0.0 < pos_bagging_fraction <= 1.0
     neg_bagging_fraction = c(0.1, 1.0), # 0.0 < neg_bagging_fraction <= 1.0
     is_unbalance = FALSE, #
@@ -372,10 +372,10 @@ HT_tuning_semillerio <- function( pinputexps, semillerio, bo_iteraciones, bypass
     
     extra_trees = FALSE,
     # Parte variable
-    learning_rate = c(0.02, 0.1),
-    feature_fraction = c(0.5, 1),
-    num_leaves = c(20L, 4000L, "integer"),
-    min_data_in_leaf = c(10L, 1000L, "integer"),
+    learning_rate = c(0.01, 0.1),
+    feature_fraction = c(0.5, 0.9),
+    num_leaves = c(20L, 200L, "integer"),
+    min_data_in_leaf = c(1L, 2500L, "integer"),
     bagging_freq = 3,
     
     leaf_size_log = c( -10, -5),   # deriva en min_data_in_leaf
@@ -467,21 +467,21 @@ wf_SEMI_sep <- function( pnombrewf )
   DR_drifting_base(metodo="rank_cero_fijo")
   FEhist_base()
   ultimo <- FErf_attributes_base()
-  #CN_canaritos_asesinos_base(ratio=0.2, desvio=4.0)
+  CN_canaritos_asesinos_base(ratio=0.2, desvio=4.0)
   
   ts9 <- TS_strategy_base9()
   
   # la Bayesian Optimization con el semillerio dentro
   ht <- HT_tuning_semillerio(
-    semillerio = 50, # semillerio dentro de la Bayesian Optim
-    bo_iteraciones = 50  # iteraciones inteligentes, apenas 10
+    semillerio = 30, # semillerio dentro de la Bayesian Optim
+    bo_iteraciones = 40  # iteraciones inteligentes, apenas 10
   )
   
   
   fm <- FM_final_models_lightgbm_semillerio( 
     c(ht, ts9), # los inputs
     ranks = c(1), # 1 = el mejor de la bayesian optimization
-    semillerio = 50,   # cantidad de semillas finales
+    semillerio = 30,   # cantidad de semillas finales
     repeticiones_exp = 1  # cantidad de repeticiones del semillerio
   )
   
